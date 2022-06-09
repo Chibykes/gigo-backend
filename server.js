@@ -15,9 +15,9 @@ dotenv.config({ path: './config/config.env' });
 //Connecting to the Database
 connectDB();
 
-// app.set('trust proxy', true);
+app.set('trust proxy', true);
 app.use(cors({
-    origin: "http://localhost:3000",
+    origin: true,
     methods: ["GET","HEAD","PUT","PATCH","POST","DELETE"],
     credentials: true,
     exposedHeaders: ['Set-Cookie', 'Date', 'ETag']
