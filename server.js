@@ -46,6 +46,11 @@ app.use(passport.session());
 // =========== FLASH MESSAGES =========== //
 app.use(flash());
 
+app.get('/', (req, res) => res.json({
+  status: 'success',
+  message: 'Welcome to the API'
+}));
+
 app.use('/api', require('./routes/api'));
 
 
