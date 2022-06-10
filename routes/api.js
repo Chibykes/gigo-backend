@@ -109,7 +109,7 @@ app.post('/new-spendings', ensureAuth, async(req, res) => {
 app.get('/trx', ensureAuth, async(req, res)=>{
 
     const limit = parseInt(req.query.limit) || 10;
-    const date = (parseInt(req.query.date) > 0 ) ? parseInt(req.query.date) : 1;
+    const date = parseInt(req.query.date) || 0;
     const query = req.query.query && JSON.parse(req.query.query);
 
     const data = await Transactions.find(query).sort({updatedAt: 'desc'}).limit(limit);
