@@ -17,7 +17,7 @@ connectDB();
 
 app.set('trust proxy', true);
 app.use(cors({
-    origin: "https://victory-granite.vercel.app/",
+    origin: ["https://victory-granite.vercel.app", "http://localhost:3000"],
     methods: ["GET","HEAD","PUT","PATCH","POST","DELETE"],
     credentials: true,
     exposedHeaders: ['Set-Cookie', 'Date', 'ETag']
@@ -30,7 +30,11 @@ app.use(session({
   resave: false,
   saveUninitialized: true,
   cookie: {
-    expires: 2592000000
+      domain: "vg-backend.herokuapp.com",
+      secure: true,
+      expires: 2592000000,
+      sameSite: 'none',
+      maxAge: 2592000000
   },
   store: MongoStore.create({ 
     mongoUrl: process.env.MONGO_URI,
