@@ -17,7 +17,7 @@ connectDB();
 
 app.set('trust proxy', true);
 app.use(cors({
-    origin: true,
+    origin: "https://victory-granite.vercel.app/",
     methods: ["GET","HEAD","PUT","PATCH","POST","DELETE"],
     credentials: true,
     exposedHeaders: ['Set-Cookie', 'Date', 'ETag']
