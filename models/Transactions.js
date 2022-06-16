@@ -10,6 +10,7 @@ const TransactionsSchema = new Schema({
     sales: {type: Array},
     amount: {type: Number},
     balance: {type: Number},
+    discount: {type: Number},
     description: {type: String},
     reference: {type: String},
     creator: { type: Object },

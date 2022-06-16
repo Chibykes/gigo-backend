@@ -128,6 +128,31 @@ app.get('/trx', ensureAuth, async(req, res)=>{
     });
 });
 
+app.post('/resolve-debt', ensureAuth, async(req, res)=>{
+    try {
+        const { id, amount, balance } = req.body;
+        const data = await Transactions.findOneAndUpdate(
+            {id},
+            { amount, balance }
+        )
+    
+    
+        res.json({
+            status: 'success',
+            msg: '',
+            user: req.user
+        });
+    } catch (e){
+        console.log(e);
+        res.json({
+            status: 'error',
+            msg: 'Could not resolve debt',
+            user: req.user
+        });
+
+    }
+});
+
 app.get('/exit', ensureAuth, async(req, res)=>{
     req.logOut();
     res.json({
