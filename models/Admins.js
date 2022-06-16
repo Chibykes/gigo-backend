@@ -6,6 +6,7 @@ const AdminSchema = new Schema({
     name: {type: String, lowercase: true},
     username: {type: String, lowercase: true},
     password: {type: String},
+    role: {type: String},
     img: { type: String }
 }, { timestamps: true })
 

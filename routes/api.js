@@ -33,19 +33,23 @@ app.post('/auth', (req, res, next) => {
 
 });
 
-app.post('/register', (req, res) => {
+app.post('/new-staff', ensureAuth, (req, res) => {
 
     const {
         password
     } = req.body;
 
     Admins.create({
-        id: gen_id(['genUppercase','genNumber'], 4),
+        id: 'VG' + gen_id(['genUppercase','genNumber'], 4),
         ...req.body,
         password: bcrypt.hashSync(password, bcrypt.genSaltSync(10)),
-    })
+    });
 
-    res.json(' Admin Added ');
+    res.json({
+        status: 'success',
+        msg: 'Staff Added Successfully',
+        user: req.user
+    });
 
 })
 
