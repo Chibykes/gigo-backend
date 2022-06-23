@@ -151,6 +151,25 @@ app.get('/delete-trx', ensureAuth, async(req, res) => {
 
 });
 
+app.post('/edit-transaction/:id', ensureAuth, async(req, res) => {
+    
+    try{
+        const {id} = req.params;
+    
+        await Transactions.findOneAndUpdate({id}, {...req.body}).exec();
+    
+        res.json({
+            status: 'success'
+        })
+    } catch(e){
+        res.json({
+            status: 'error'
+        })
+
+    }
+
+});
+
 app.post('/resolve-debt', ensureAuth, async(req, res)=>{
     try {
         const { id, amount, balance } = req.body;
