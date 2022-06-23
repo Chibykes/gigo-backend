@@ -159,11 +159,13 @@ app.post('/edit-transaction/:id', ensureAuth, async(req, res) => {
         await Transactions.findOneAndUpdate({id}, {...req.body}).exec();
     
         res.json({
-            status: 'success'
+            status: 'success',
+            user: req.user
         })
     } catch(e){
         res.json({
-            status: 'error'
+            status: 'error',
+            user: req.user
         })
 
     }
