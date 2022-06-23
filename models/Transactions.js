@@ -13,6 +13,7 @@ const TransactionsSchema = new Schema({
     discount: {type: Number},
     description: {type: String},
     reference: {type: String},
+    payment_method: {type: String},
     creator: { type: Object },
 }, { timestamps: true })
 
