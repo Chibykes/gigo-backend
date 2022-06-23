@@ -136,9 +136,8 @@ app.get('/delete-trx', ensureAuth, async(req, res) => {
 
     try{
         const query = JSON.parse(req.query.query);
-        console.log(query)
     
-        await Transactions.findOneAndDelete({ id }).exec();
+        await Transactions.findOneAndDelete(query).exec();
     
         res.json({
             status: 'success'
