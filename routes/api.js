@@ -132,7 +132,7 @@ app.get('/trx', ensureAuth, async(req, res)=>{
     });
 });
 
-app.get('/delete-trx'. ensureAuth, async(req, res) => {
+app.get('/delete-trx', ensureAuth, async(req, res) => {
 
     try{
         const {id} = req.query;
