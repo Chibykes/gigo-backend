@@ -134,14 +134,21 @@ app.get('/trx', ensureAuth, async(req, res)=>{
 
 app.get('/delete-trx'. ensureAuth, async(req, res) => {
 
-    const {id} = req.query;
-
-    await Transactions.findOneAndDelete({ id }).exec();
-
-    res.json({
-        status: 'success'
-    })
+    try{
+        const {id} = req.query;
     
+        await Transactions.findOneAndDelete({ id }).exec();
+    
+        res.json({
+            status: 'success'
+        })
+    } catch(e){
+        res.json({
+            status: 'error'
+        })
+
+    }
+
 });
 
 app.post('/resolve-debt', ensureAuth, async(req, res)=>{
