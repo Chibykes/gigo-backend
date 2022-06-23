@@ -87,7 +87,7 @@ app.post('/new-spendings', ensureAuth, async(req, res) => {
     try{
         const trx = await Transactions.create({
             ...req.body,
-            id: gen_id(['genLowercase','genNumber'], 7),
+            id: `VG${gen_id(['genLowercase','genNumber'], 7)}`,
             type: 'debit',
             reference: gen_id(['genNumber'], 15)
         });
