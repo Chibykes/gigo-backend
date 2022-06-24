@@ -15,7 +15,7 @@ dotenv.config({ path: './config/config.env' });
 //Connecting to the Database
 connectDB();
 
-app.set('trust proxy', true);
+// app.set('trust proxy', true);
 app.use(cors({
     origin: ["https://victory-granite.vercel.app", "http://localhost:3000"],
     methods: ["GET","HEAD","PUT","PATCH","POST","DELETE"],
@@ -31,7 +31,7 @@ app.use(session({
   saveUninitialized: true,
   cookie: {
       domain: "vg-backend.herokuapp.com",
-      secure: true,
+      // secure: true,
       expires: 2592000000,
       sameSite: 'none',
       maxAge: 2592000000

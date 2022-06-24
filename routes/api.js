@@ -1,19 +1,19 @@
 const app = require('express').Router();
 const passport = require('passport');
+const Admins = require('../models/Admins');
 const Transactions = require('../models/Transactions');
 const gen_id = require('../utils/genIDs');
 const bcrypt = require('bcryptjs');
-const Admins = require('../models/Admins');
 const { ensureAuth }  = require('../config/auth')
 
 
-// app.get('/auth', (req,res) => { 
-//     res.json({
-//         status: 'success',
-//         msg: 'Login Page',
-//         data: null
-//     }) 
-// })
+app.get('/auth', (req,res) => { 
+    res.json({
+        status: 'success',
+        msg: 'Login Page',
+        data: null
+    }) 
+})
 
 app.post('/auth', (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
@@ -128,6 +128,33 @@ app.get('/trx', ensureAuth, async(req, res)=>{
         msg: 'Transactions found',
         data,
         specificTrx,
+        user: req.user
+    });
+});
+
+app.get('/staffs', ensureAuth, async(req, res)=>{
+
+    const { action, id } = JSON.parse(req?.query?.query);
+
+    if(action === 'delete'){
+        Admins.findOneAndDelete({id: id}).exec();
+
+        res.json({
+            status: 'success',
+            msg: 'Staff Deleted',
+            user: req.user
+        });
+        return;
+    }
+
+    const query = req.query.query && JSON.parse(req.query.query);
+
+    const data = await Admins.find(query, '-img').sort({updatedAt: 'desc'});
+
+    res.json({
+        status: 'success',
+        msg: 'Staffs found',
+        data,
         user: req.user
     });
 });
