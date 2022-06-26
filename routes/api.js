@@ -33,26 +33,6 @@ app.post('/auth', (req, res, next) => {
 
 });
 
-app.post('/new-staff', ensureAuth, (req, res) => {
-
-    const {
-        password
-    } = req.body;
-
-    Admins.create({
-        id: 'VG' + gen_id(['genUppercase','genNumber'], 4),
-        ...req.body,
-        password: bcrypt.hashSync(password, bcrypt.genSaltSync(10)),
-    });
-
-    res.json({
-        status: 'success',
-        msg: 'Staff Added Successfully',
-        user: req.user
-    });
-
-})
-
 app.post('/new-sales', ensureAuth, async(req, res) => {
 
     try{
@@ -137,7 +117,7 @@ app.get('/staffs', ensureAuth, async(req, res)=>{
     const { action, id } = JSON.parse(req?.query?.query);
 
     if(action === 'delete'){
-        Admins.findOneAndDelete({id: id}).exec();
+        Admins.findOneAndDelete({id, role: 'staff'}).exec();
 
         res.json({
             status: 'success',
@@ -149,7 +129,7 @@ app.get('/staffs', ensureAuth, async(req, res)=>{
 
     const query = req.query.query && JSON.parse(req.query.query);
 
-    const data = await Admins.find(query, '-img').sort({updatedAt: 'desc'});
+    const data = await Admins.find({...query, role: 'staff'}, '-img').sort({updatedAt: 'desc'});
 
     res.json({
         status: 'success',
@@ -158,6 +138,27 @@ app.get('/staffs', ensureAuth, async(req, res)=>{
         user: req.user
     });
 });
+
+app.post('/new-staff', ensureAuth, (req, res) => {
+
+    const {
+        password
+    } = req.body;
+
+    Admins.create({
+        id: 'VG' + gen_id(['genUppercase','genNumber'], 4),
+        ...req.body,
+        role: 'staff',
+        password: bcrypt.hashSync(password, bcrypt.genSaltSync(10)),
+    });
+
+    res.json({
+        status: 'success',
+        msg: 'Staff Added Successfully',
+        user: req.user
+    });
+
+})
 
 app.get('/delete-trx', ensureAuth, async(req, res) => {
 
