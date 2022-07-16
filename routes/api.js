@@ -38,7 +38,7 @@ app.post('/new-sales', ensureAuth, async(req, res) => {
     try{
         const trx = await Transactions.create({
             ...req.body,
-            id: `VG${gen_id(['genLowercase','genNumber'], 7)}`,
+            id: `GO${gen_id(['genLowercase','genNumber'], 7)}`,
             type: 'sales',
             reference: gen_id(['genNumber'], 15),
             creator: req.user._id
@@ -67,7 +67,7 @@ app.post('/new-spendings', ensureAuth, async(req, res) => {
     try{
         const trx = await Transactions.create({
             ...req.body,
-            id: `VG${gen_id(['genLowercase','genNumber'], 7)}`,
+            id: `GO${gen_id(['genLowercase','genNumber'], 7)}`,
             type: 'debit',
             reference: gen_id(['genNumber'], 15)
         });
@@ -146,7 +146,7 @@ app.post('/new-staff', ensureAuth, (req, res) => {
     } = req.body;
 
     Admins.create({
-        id: 'VG' + gen_id(['genUppercase','genNumber'], 4),
+        id: 'GO' + gen_id(['genUppercase','genNumber'], 4),
         ...req.body,
         role: 'staff',
         password: bcrypt.hashSync(password, bcrypt.genSaltSync(10)),
