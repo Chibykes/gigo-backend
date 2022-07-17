@@ -240,6 +240,7 @@ app.post('/profile', ensureAuth, async(req, res) => {
             password: bcrypt.hashSync(password, bcrypt.genSaltSync(10)),
         }, {new: true});
     } else {
+        delete req.body.password;
         profile = await Admins.findOneAndUpdate({_id}, {
             ...req.body,
         }, {new: true});
