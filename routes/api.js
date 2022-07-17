@@ -225,6 +225,34 @@ app.post('/resolve-debt', ensureAuth, async(req, res)=>{
     }
 });
 
+app.post('/profile', ensureAuth, async(req, res) => {
+
+    const {
+        _id,
+        password
+    } = req.body;
+
+    let profile;
+
+    if(password){
+        profile = await Admins.findOneAndUpdate({_id}, {
+            ...req.body,
+            password: bcrypt.hashSync(password, bcrypt.genSaltSync(10)),
+        }, {new: true});
+    } else {
+        profile = await Admins.findOneAndUpdate({_id}, {
+            ...req.body,
+        }, {new: true});
+    }
+
+    res.json({
+        status: 'success',
+        msg: 'Info Updated',
+        user: profile
+    });
+
+})
+
 app.get('/exit', ensureAuth, async(req, res)=>{
     req.logOut();
     res.json({
