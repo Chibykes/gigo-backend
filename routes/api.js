@@ -265,6 +265,7 @@ app.get('/reports', ensureAuth, async(req, res)=>{
     }, 'customer_name amount').sort({createdAt: 'desc'});
     
     const debts = await Transactions.find({ 
+        type: 'sales',
         createdAt:  { $gt: time }
     }, 'customer_name balance').sort({balance: 'desc'});
     
