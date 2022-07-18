@@ -252,7 +252,40 @@ app.post('/profile', ensureAuth, async(req, res) => {
         user: profile
     });
 
-})
+});
+
+app.get('/reports', ensureAuth, async(req, res)=>{
+
+    const date = (parseInt(req.query.date)-1) || 0;
+    const time = new Date(new Date(new Date().toLocaleDateString()).getTime() - (1000 * 60 * 60 * 24 * date )).getTime() ;
+
+    const sales = await Transactions.find({
+        type: 'sales',
+        createdAt:  { $gt: time }
+    }, 'customer_name amount').sort({createdAt: 'desc'});
+    
+    const debts = await Transactions.find({ 
+        createdAt:  { $gt: time }
+    }, 'customer_name balance').sort({balance: 'desc'});
+    
+    const expenses = await Transactions.find({ 
+        type: 'debit',
+        createdAt:  { $gt: time }
+    }, 'amount').sort({createdAt: 'desc'});
+
+
+    res.json({
+        status: 'success',
+        msg: 'Transactions found',
+        data: {
+            sales,
+            debts,
+            expenses
+        },
+        user: req.user
+    });
+
+});
 
 app.get('/exit', ensureAuth, async(req, res)=>{
     req.logOut();
