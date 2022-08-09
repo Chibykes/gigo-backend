@@ -44,7 +44,7 @@ app.post('/new-sales', ensureAuth, async(req, res) => {
             id: `GO${gen_id(['genLowercase','genNumber'], 7)}`,
             type: 'sales',
             reference: gen_id(['genNumber'], 15),
-            creator: req.user._id
+            initiator: req.user._id
         });
 
         res.json({
@@ -73,7 +73,8 @@ app.post('/new-spendings', ensureAuth, async(req, res) => {
             ...req.body,
             id: `GO${gen_id(['genLowercase','genNumber'], 7)}`,
             type: 'debit',
-            reference: gen_id(['genNumber'], 15)
+            reference: gen_id(['genNumber'], 15),
+            initiator: req.user._id
         });
 
         res.json({
@@ -228,7 +229,7 @@ app.post('/resolve-debt', ensureAuth, async(req, res)=>{
         
         await Transactions.findOneAndUpdate(
             {id, business},
-            { amount, balance }
+            { amount, balance, debt_resolver: req.user._id }
         );
     
         res.json({
