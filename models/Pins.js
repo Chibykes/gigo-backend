@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const Schema = require('mongoose').Schema;
 
 const PinsSchema = new Schema({
-    pin: { type: String },
+    pin: { type: String, uppercase: true },
     days: { type: Number }
 }, { timestamps: true })
 

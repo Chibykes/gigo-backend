@@ -305,13 +305,14 @@ app.post('/subscribe', ensureAuth, async(req, res) => {
 
     if(pinDetails){
 
-        await Settings.findOneAndUpdate({ _id }, {
+        const business = await Settings.findOneAndUpdate({ _id }, {
             expiryDate: new Date(new Date().getTime() + (pinDetails * 1000 * 60 * 60 * 24))
-        })
+        }, {new: true})
 
         return res.json({
             status: "success",
-            msg: "Sucessfully Subscribed"
+            msg: "Sucessfully Subscribed",
+            business 
         });
     }
 
