@@ -97,6 +97,7 @@ app.get('/trx', ensureAuth, async(req, res)=>{
     const limit = parseInt(req.query.limit) || 10;
     const date = parseInt(req.query.date) || 0;
     const query = req.query.query && JSON.parse(req.query.query);
+    const business = req.query.business || query.business;
 
     const data = await Transactions.find(query)
                             .populate('business')
@@ -106,7 +107,7 @@ app.get('/trx', ensureAuth, async(req, res)=>{
                             .limit(limit);
 
     const specificTrx = await Transactions.find({ 
-        business: query.business,
+        business,
         createdAt:  { 
             $gt: new Date(new Date(new Date().toLocaleDateString()).getTime() - (1000 * 60 * 60 * 24 * date )).getTime() 
         }
