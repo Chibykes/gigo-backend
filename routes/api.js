@@ -301,12 +301,11 @@ app.get('/business', async(req, res) => {
 
 app.post('/subscribe', ensureAuth, async(req, res) => {
     const {_id, pin} = req.body;
-    const pinDetails = await Pins.findOne({pin});
+    const pinDetails = await Pins.findOne({ pin });
 
     if(pinDetails){
-
         const business = await Settings.findOneAndUpdate({ _id }, {
-            expiryDate: new Date(new Date().getTime() + (pinDetails * 1000 * 60 * 60 * 24))
+            expiryDate: new Date(new Date().getTime() + (pinDetails.days * 1000 * 60 * 60 * 24))
         }, {new: true})
 
         return res.json({
