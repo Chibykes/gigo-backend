@@ -301,7 +301,7 @@ app.get('/business', async(req, res) => {
 
 app.post('/subscribe', ensureAuth, async(req, res) => {
     const {_id, pin} = req.body;
-    const pinDetails = await Pins.findOne({ pin });
+    const pinDetails = await Pins.find({ });
 
     if(pinDetails){
         const business = await Settings.findOneAndUpdate({ _id }, {
