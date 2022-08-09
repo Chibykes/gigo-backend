@@ -14,6 +14,7 @@ module.exports = (passport) => {
                 Admins.findOne({ $or: [{username}, {id: username.toUpperCase()}] })
                 .populate('business')
                 .then(admin => {
+                    console.log(admin);
                     if(!admin){
                         return done(null, 'Username Incorrect');
                     }

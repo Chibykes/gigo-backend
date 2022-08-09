@@ -50,7 +50,7 @@ app.post('/new-sales', ensureAuth, async(req, res) => {
         res.json({
             status: 'success',
             msg: 'Transaction has been added',
-            data: trx,
+            data: {id: trx.id},
             user: req.user
         });
         
@@ -80,7 +80,7 @@ app.post('/new-spendings', ensureAuth, async(req, res) => {
         res.json({
             status: 'success',
             msg: 'Transaction has been added',
-            data: trx,
+            data: {id: trx.id},
             user: req.user
         });
         
@@ -312,15 +312,6 @@ app.get('/reports', ensureAuth, async(req, res)=>{
 
 });
 
-// app.get('/business', async(req, res) => {
-//     const business = await Business.findOne({ id: business });
-
-//     return res.json({
-//         status: "success",
-//         business
-//     });
-// });
-
 app.post('/subscribe', ensureAuth, async(req, res) => {
     
     const _id = req.user.business._id;
@@ -353,12 +344,5 @@ app.get('/exit', ensureAuth, async(req, res)=>{
         data: null
     })
 });
-
-// app.get('/user', ensureAuth, async(req, res) => {
-//     res.json({
-//         status: 'success',
-//         user: req.user,
-//     });
-// });
 
 module.exports = app;
