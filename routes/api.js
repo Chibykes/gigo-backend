@@ -101,6 +101,8 @@ app.get('/trx', ensureAuth, async(req, res)=>{
     const date = parseInt(req.query.date) || 0;
     const query = req.query.query && JSON.parse(req.query.query);
 
+    console.log(req.user);
+
     const data = await Transactions.find({
         business: req.user.business._id,
         ...query,

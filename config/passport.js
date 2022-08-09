@@ -14,7 +14,6 @@ module.exports = (passport) => {
                 Admins.findOne({ $or: [{username}, {id: username.toUpperCase()}] })
                 .populate('business')
                 .then(admin => {
-                    console.log(admin);
                     if(!admin){
                         return done(null, 'Username Incorrect');
                     }
@@ -40,7 +39,7 @@ module.exports = (passport) => {
     });
 
     passport.deserializeUser((id, done)=>{
-        Admins.findById({ _id: id }, (err, admin)=>{
+        Admins.findById({ _id: id }, (err, admin) => {
             return done(err, admin);
         })
     });
