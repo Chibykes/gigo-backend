@@ -307,7 +307,7 @@ app.post('/subscribe', ensureAuth, async(req, res) => {
 
     if(pinDetails){
         const business = await Settings.findOneAndUpdate({ _id }, {
-            expiryDate: new Date(new Date().getTime() + (pinDetails.days * 1000 * 60 * 60 * 24)).toISOString();
+            expiryDate: new Date(new Date().getTime() + (pinDetails.days * 1000 * 60 * 60 * 24)).toISOString()
         }, {new: true}).exec();
 
         return res.json({
