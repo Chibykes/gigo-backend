@@ -39,6 +39,7 @@ app.post('/new-sales', ensureAuth, async(req, res) => {
 
     try{
         const trx = await Transactions.create({
+            business: req.user.business._id,
             ...req.body,
             id: `GO${gen_id(['genLowercase','genNumber'], 7)}`,
             type: 'sales',
@@ -68,6 +69,7 @@ app.post('/new-spendings', ensureAuth, async(req, res) => {
 
     try{
         const trx = await Transactions.create({
+            business: req.user.business._id,
             ...req.body,
             id: `GO${gen_id(['genLowercase','genNumber'], 7)}`,
             type: 'debit',
@@ -98,15 +100,18 @@ app.get('/trx', ensureAuth, async(req, res)=>{
     const date = parseInt(req.query.date) || 0;
     const query = req.query.query && JSON.parse(req.query.query);
 
-    const data = await Transactions.find(query)
-                            .populate('business')
-                            .populate('initiator')
-                            .populate('debt_resolver')
-                            .sort({updatedAt: 'desc'})
-                            .limit(limit);
+    const data = await Transactions.find({
+        business: req.user.business._id,
+        ...query,
+    })
+    .populate('business')
+    .populate('initiator')
+    .populate('debt_resolver')
+    .sort({updatedAt: 'desc'})
+    .limit(limit);
 
     const specificTrx = await Transactions.find({ 
-        business: query.business,
+        business: req.user.business._id,
         createdAt:  { 
             $gt: new Date(new Date(new Date().toLocaleDateString()).getTime() - (1000 * 60 * 60 * 24 * date )).getTime() 
         }
@@ -124,7 +129,8 @@ app.get('/trx', ensureAuth, async(req, res)=>{
 
 app.get('/staffs', ensureAuth, async(req, res)=>{
 
-    const { action, id, business } = JSON.parse(req?.query?.query);
+    const business = req.user.business._id;
+    const { action, id } = JSON.parse(req.query?.query);
 
     if(action === 'delete'){
         Admins.findOneAndDelete({business, id, role: 'staff'}).exec();
@@ -139,7 +145,7 @@ app.get('/staffs', ensureAuth, async(req, res)=>{
 
     const query = req.query.query && JSON.parse(req.query.query);
 
-    const data = await Admins.find({...query, role: 'staff'}, '-img').sort({updatedAt: 'desc'});
+    const data = await Admins.find({...query, business, role: 'staff'}, '-img').sort({updatedAt: 'desc'});
 
     res.json({
         status: 'success',
@@ -151,12 +157,15 @@ app.get('/staffs', ensureAuth, async(req, res)=>{
 
 app.post('/new-staff', ensureAuth, (req, res) => {
 
+    const business = req.user.business._id;
+
     const {
         password
     } = req.body;
 
     Admins.create({
         id: 'GO' + gen_id(['genUppercase','genNumber'], 4),
+        business,
         ...req.body,
         role: 'staff',
         password: bcrypt.hashSync(password, bcrypt.genSaltSync(10)),
@@ -173,9 +182,10 @@ app.post('/new-staff', ensureAuth, (req, res) => {
 app.get('/delete-trx', ensureAuth, async(req, res) => {
 
     try{
+        const business = req.user.business._id;
         const query = JSON.parse(req.query.query);
     
-        await Transactions.findOneAndDelete(query).exec();
+        await Transactions.findOneAndDelete({...query, business}).exec();
     
         res.json({
             status: 'success'
@@ -192,9 +202,10 @@ app.get('/delete-trx', ensureAuth, async(req, res) => {
 app.post('/edit-transaction', ensureAuth, async(req, res) => {
     
     try{
+        const business = req.user.business._id;
         const query = JSON.parse(req.query.query);
     
-        await Transactions.findOneAndUpdate(query, {...req.body}).exec();
+        await Transactions.findOneAndUpdate({...query, business}, {...req.body}).exec();
     
         res.json({
             status: 'success',
@@ -212,18 +223,20 @@ app.post('/edit-transaction', ensureAuth, async(req, res) => {
 
 app.post('/resolve-debt', ensureAuth, async(req, res)=>{
     try {
-        const { id, business, amount, balance } = req.body;
-        const data = await Transactions.findOneAndUpdate(
+        const business = req.user.business._id;
+        const { id, amount, balance } = req.body;
+        
+        await Transactions.findOneAndUpdate(
             {id, business},
             { amount, balance }
-        )
-    
+        );
     
         res.json({
             status: 'success',
             msg: '',
             user: req.user
         });
+
     } catch (e){
         res.json({
             status: 'error',
@@ -236,12 +249,8 @@ app.post('/resolve-debt', ensureAuth, async(req, res)=>{
 
 app.post('/profile', ensureAuth, async(req, res) => {
 
-    const {
-        _id,
-        business,
-        password
-    } = req.body;
-
+    const business = req.user.business._id;
+    const { _id, password } = req.body;
     let profile;
 
     if(password){
@@ -267,7 +276,7 @@ app.post('/profile', ensureAuth, async(req, res) => {
 app.get('/reports', ensureAuth, async(req, res)=>{
 
     const date = (parseInt(req.query.date)-1) || 0;
-    const business = req.query.business;
+    const business = req.user.business._id;
     const time = new Date(new Date(new Date().toLocaleDateString()).getTime() - (1000 * 60 * 60 * 24 * date )).getTime() ;
 
     const sales = await Transactions.find({
@@ -302,18 +311,19 @@ app.get('/reports', ensureAuth, async(req, res)=>{
 
 });
 
-app.get('/business', async(req, res) => {
-    const business = await Business.findOne({ id: business });
+// app.get('/business', async(req, res) => {
+//     const business = await Business.findOne({ id: business });
 
-    return res.json({
-        status: "success",
-        business
-    });
-});
+//     return res.json({
+//         status: "success",
+//         business
+//     });
+// });
 
 app.post('/subscribe', ensureAuth, async(req, res) => {
-    const {_id, pin} = req.body;
-    console.log(_id, pin);
+    
+    const _id = req.user.business._id;
+    const {pin} = req.body;
     const pinDetails = await Pins.findOneAndDelete({ pin }).exec();
 
     if(pinDetails){
