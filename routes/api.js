@@ -2,7 +2,7 @@ const app = require('express').Router();
 const passport = require('passport');
 const Admins = require('../models/Admins');
 const Transactions = require('../models/Transactions');
-const Settings = require('../models/Settings');
+const Business = require('../models/Business');
 const Pins = require('../models/Pins');
 const gen_id = require('../utils/genIDs');
 const bcrypt = require('bcryptjs');
@@ -98,11 +98,19 @@ app.get('/trx', ensureAuth, async(req, res)=>{
     const date = parseInt(req.query.date) || 0;
     const query = req.query.query && JSON.parse(req.query.query);
 
-    const data = await Transactions.find(query).sort({updatedAt: 'desc'}).limit(limit);
+    const data = await Transactions.find(query)
+                            .populate('business')
+                            .populate('initiator')
+                            .populate('debt_resolver')
+                            .sort({updatedAt: 'desc'})
+                            .limit(limit);
 
-    const specificTrx = await Transactions.find({ createdAt:  { 
-        $gt: new Date(new Date(new Date().toLocaleDateString()).getTime() - (1000 * 60 * 60 * 24 * date )).getTime() 
-    }});
+    const specificTrx = await Transactions.find({ 
+        business: query.business,
+        createdAt:  { 
+            $gt: new Date(new Date(new Date().toLocaleDateString()).getTime() - (1000 * 60 * 60 * 24 * date )).getTime() 
+        }
+    });
 
 
     res.json({
@@ -116,10 +124,10 @@ app.get('/trx', ensureAuth, async(req, res)=>{
 
 app.get('/staffs', ensureAuth, async(req, res)=>{
 
-    const { action, id } = JSON.parse(req?.query?.query);
+    const { action, id, business } = JSON.parse(req?.query?.query);
 
     if(action === 'delete'){
-        Admins.findOneAndDelete({id, role: 'staff'}).exec();
+        Admins.findOneAndDelete({business, id, role: 'staff'}).exec();
 
         res.json({
             status: 'success',
@@ -181,12 +189,12 @@ app.get('/delete-trx', ensureAuth, async(req, res) => {
 
 });
 
-app.post('/edit-transaction/:id', ensureAuth, async(req, res) => {
+app.post('/edit-transaction', ensureAuth, async(req, res) => {
     
     try{
-        const {id} = req.params;
+        const query = JSON.parse(req.query.query);
     
-        await Transactions.findOneAndUpdate({id}, {...req.body}).exec();
+        await Transactions.findOneAndUpdate(query, {...req.body}).exec();
     
         res.json({
             status: 'success',
@@ -204,9 +212,9 @@ app.post('/edit-transaction/:id', ensureAuth, async(req, res) => {
 
 app.post('/resolve-debt', ensureAuth, async(req, res)=>{
     try {
-        const { id, amount, balance } = req.body;
+        const { id, business, amount, balance } = req.body;
         const data = await Transactions.findOneAndUpdate(
-            {id},
+            {id, business},
             { amount, balance }
         )
     
@@ -217,7 +225,6 @@ app.post('/resolve-debt', ensureAuth, async(req, res)=>{
             user: req.user
         });
     } catch (e){
-        console.log(e);
         res.json({
             status: 'error',
             msg: 'Could not resolve debt',
@@ -231,19 +238,20 @@ app.post('/profile', ensureAuth, async(req, res) => {
 
     const {
         _id,
+        business,
         password
     } = req.body;
 
     let profile;
 
     if(password){
-        profile = await Admins.findOneAndUpdate({_id}, {
+        profile = await Admins.findOneAndUpdate({_id, business}, {
             ...req.body,
             password: bcrypt.hashSync(password, bcrypt.genSaltSync(10)),
         }, {new: true});
     } else {
         delete req.body.password;
-        profile = await Admins.findOneAndUpdate({_id}, {
+        profile = await Admins.findOneAndUpdate({_id, business}, {
             ...req.body,
         }, {new: true});
     }
@@ -259,19 +267,23 @@ app.post('/profile', ensureAuth, async(req, res) => {
 app.get('/reports', ensureAuth, async(req, res)=>{
 
     const date = (parseInt(req.query.date)-1) || 0;
+    const business = req.query.business;
     const time = new Date(new Date(new Date().toLocaleDateString()).getTime() - (1000 * 60 * 60 * 24 * date )).getTime() ;
 
     const sales = await Transactions.find({
+        business,
         type: 'sales',
         createdAt:  { $gt: time }
     }, 'customer_name amount').sort({amount: 'desc'});
     
     const debts = await Transactions.find({ 
+        business,
         type: 'sales',
         createdAt:  { $gt: time }
     }, 'customer_name balance').sort({balance: 'desc'});
     
     const expenses = await Transactions.find({ 
+        business,
         type: 'debit',
         createdAt:  { $gt: time }
     }, 'amount').sort({createdAt: 'desc'});
@@ -291,11 +303,11 @@ app.get('/reports', ensureAuth, async(req, res)=>{
 });
 
 app.get('/business', async(req, res) => {
-    const businessDetails = await Settings.find({});
+    const business = await Business.findOne({ id: business });
 
     return res.json({
         status: "success",
-        business: businessDetails[0]
+        business
     });
 });
 
@@ -304,17 +316,14 @@ app.post('/subscribe', ensureAuth, async(req, res) => {
     console.log(_id, pin);
     const pinDetails = await Pins.findOneAndDelete({ pin }).exec();
 
-    console.log(pinDetails);
-
     if(pinDetails){
-        const business = await Settings.findOneAndUpdate({ _id }, {
+        await Business.findOneAndUpdate({ _id }, {
             expiryDate: new Date(new Date().getTime() + (pinDetails.days * 1000 * 60 * 60 * 24))
         }, {new: true}).exec();
 
         return res.json({
             status: "success",
-            msg: "Sucessfully Subscribed",
-            business,
+            msg: "Sucessfully Subscribed"
         });
     }
     

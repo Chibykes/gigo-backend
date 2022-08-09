@@ -7,7 +7,8 @@ const AdminSchema = new Schema({
     username: {type: String, lowercase: true},
     password: {type: String},
     role: {type: String},
-    img: { type: String }
+    img: { type: String },
+    business: { type: Schema.Types.ObjectId, ref: 'Business' },
 }, { timestamps: true })
 
 module.exports = mongoose.model('admins', AdminSchema);

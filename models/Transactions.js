@@ -14,7 +14,9 @@ const TransactionsSchema = new Schema({
     description: {type: String},
     reference: {type: String},
     payment_method: {type: String},
-    creator: { type: Object },
+    business: { type: Schema.Types.ObjectId, ref: 'Business' },
+    initiator: { type: Schema.Types.ObjectId, ref: 'Admins' },
+    debt_resolver: { type: Schema.Types.ObjectId, ref: 'Admins' },
 }, { timestamps: true })
 
 module.exports = mongoose.model('transactions', TransactionsSchema);
