@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-import Business from './Business';
-import Admins from './Admins';
+const Business = require('./Business');
+const Admins = require('./Admins');
 
 const TransactionsSchema = new Schema({
     id: {type: String, uppercase: true},

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = require('mongoose').Schema;
-import Business from './Business';
+const Business = require('./Business');
 
 const AdminSchema = new Schema({
     id: {type: String, uppercase: true},
