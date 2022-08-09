@@ -2,6 +2,8 @@ const app = require('express').Router();
 const passport = require('passport');
 const Admins = require('../models/Admins');
 const Transactions = require('../models/Transactions');
+const Settings = require('../models/Settings');
+const Pins = require('../models/Pins');
 const gen_id = require('../utils/genIDs');
 const bcrypt = require('bcryptjs');
 const { ensureAuth }  = require('../config/auth')
@@ -284,6 +286,38 @@ app.get('/reports', ensureAuth, async(req, res)=>{
             expenses
         },
         user: req.user
+    });
+
+});
+
+app.get('/business', async(req, res) => {
+    const businessDetails = await Settings.find({});
+
+    return res.json({
+        status: "success",
+        business: businessDetails[0]
+    });
+});
+
+app.post('/subscribe', ensureAuth, async(req, res) => {
+    const {_id, pin} = req.body;
+    const pinDetails = await Pins.findOne({pin});
+
+    if(pinDetails){
+
+        await Settings.findOneAndUpdate({ _id }, {
+            expiryDate: new Date(new Date().getTime() + (pinDetails * 1000 * 60 * 60 * 24))
+        })
+
+        return res.json({
+            status: "success",
+            msg: "Sucessfully Subscribed"
+        });
+    }
+
+    return res.json({
+        status: "error",
+        msg: "PIN does not exist"
     });
 
 });
