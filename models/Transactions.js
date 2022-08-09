@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+import Business from './Business';
+import Admins from './Admins';
 
 const TransactionsSchema = new Schema({
     id: {type: String, uppercase: true},
@@ -14,9 +16,9 @@ const TransactionsSchema = new Schema({
     description: {type: String},
     reference: {type: String},
     payment_method: {type: String},
-    business: { type: Schema.Types.ObjectId, ref: 'Business' },
-    initiator: { type: Schema.Types.ObjectId, ref: 'Admins' },
-    debt_resolver: { type: Schema.Types.ObjectId, ref: 'Admins' },
+    business: { type: Schema.Types.ObjectId, ref: Business },
+    initiator: { type: Schema.Types.ObjectId, ref: Admins },
+    debt_resolver: { type: Schema.Types.ObjectId, ref: Admins },
 }, { timestamps: true })
 
 module.exports = mongoose.model('transactions', TransactionsSchema);
