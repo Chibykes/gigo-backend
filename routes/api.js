@@ -303,23 +303,23 @@ app.post('/subscribe', ensureAuth, async(req, res) => {
     const {_id, pin} = req.body;
     const pinDetails = await Pins.find({ pin }).exec();
 
+    console.log(pinDetails);
+
     if(pinDetails){
         const business = await Settings.findOneAndUpdate({ _id }, {
-            expiryDate: new Date(new Date().getTime() + (pinDetails.days * 1000 * 60 * 60 * 24))
+            expiryDate: new Date(new Date().getTime() + (pinDetails.days * 1000 * 60 * 60 * 24)).toISOString();
         }, {new: true}).exec();
 
         return res.json({
             status: "success",
             msg: "Sucessfully Subscribed",
             business,
-            pinDetails
         });
     }
     
     return res.json({
         status: "error",
         msg: "PIN does not exist",
-        pinDetails
     });
 
 });
