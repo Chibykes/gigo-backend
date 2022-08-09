@@ -301,20 +301,20 @@ app.get('/business', async(req, res) => {
 
 app.post('/subscribe', ensureAuth, async(req, res) => {
     const {_id, pin} = req.body;
-    const pinDetails = await Pins.find({ }).exec();
+    const pinDetails = await Pins.find({ pin }).exec();
 
-    // if(pinDetails){
-    //     const business = await Settings.findOneAndUpdate({ _id }, {
-    //         expiryDate: new Date(new Date().getTime() + (pinDetails.days * 1000 * 60 * 60 * 24))
-    //     }, {new: true})
+    if(pinDetails){
+        const business = await Settings.findOneAndUpdate({ _id }, {
+            expiryDate: new Date(new Date().getTime() + (pinDetails.days * 1000 * 60 * 60 * 24))
+        }, {new: true}).exec();
 
-    //     return res.json({
-    //         status: "success",
-    //         msg: "Sucessfully Subscribed",
-    //         business,
-    //         pinDetails
-    //     });
-    // }
+        return res.json({
+            status: "success",
+            msg: "Sucessfully Subscribed",
+            business,
+            pinDetails
+        });
+    }
     
     return res.json({
         status: "error",
