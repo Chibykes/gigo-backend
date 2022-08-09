@@ -312,13 +312,15 @@ app.post('/subscribe', ensureAuth, async(req, res) => {
         return res.json({
             status: "success",
             msg: "Sucessfully Subscribed",
-            business 
+            business,
+            pinDetails
         });
     }
-
+    
     return res.json({
         status: "error",
-        msg: "PIN does not exist"
+        msg: "PIN does not exist",
+        pinDetails
     });
 
 });
