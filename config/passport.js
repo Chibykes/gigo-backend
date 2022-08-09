@@ -39,7 +39,9 @@ module.exports = (passport) => {
     });
 
     passport.deserializeUser((id, done)=>{
-        Admins.findById({ _id: id }, (err, admin) => {
+        Admins.findById({ _id: id })
+        .populate('business')
+        .exec((err, admin) => {
             return done(err, admin);
         })
     });
