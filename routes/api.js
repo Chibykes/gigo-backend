@@ -3,6 +3,7 @@ const passport = require('passport');
 const Admins = require('../models/Admins');
 const Transactions = require('../models/Transactions');
 const Business = require('../models/Business');
+const Inventory = require('../models/Inventory');
 const Pins = require('../models/Pins');
 const gen_id = require('../utils/genIDs');
 const bcrypt = require('bcryptjs');
@@ -46,6 +47,10 @@ app.post('/new-sales', ensureAuth, async(req, res) => {
             reference: gen_id(['genNumber'], 15),
             initiator: req.user._id
         });
+
+        req.body.sales.forEach(async({product, qty}) => {
+            await Inventory.findOneAndUpdate({ name: product }, {$inc: { qty: -parseInt(qty) }})
+        })
 
         res.json({
             status: 'success',
@@ -100,8 +105,6 @@ app.get('/trx', ensureAuth, async(req, res)=>{
     const limit = parseInt(req.query.limit) || 10;
     const date = parseInt(req.query.date) || 0;
     const query = req.query.query && JSON.parse(req.query.query);
-
-    console.log(req.user);
 
     const data = await Transactions.find({
         business: req.user.business._id,
@@ -336,6 +339,54 @@ app.post('/subscribe', ensureAuth, async(req, res) => {
         msg: "PIN does not exist",
     });
 
+});
+
+app.get('/inventory', ensureAuth, async(req, res) => {
+    const {limit} = JSON.parse(req?.query?.query || `{}`);
+
+    const all_products = await Inventory.find({ 
+        business: req.user.business._id 
+    }).sort({createdAt: 'desc'});
+
+
+    res.json({
+        status: 'success',
+        msg: '',
+        user: req.user,
+        data: limit ? all_products.slice(0, parseInt(limit)) : all_products,
+        calc: {
+            purchase: all_products.reduce((t, c) => t += c.cost_price * c.qty, 0),
+            selling: all_products.reduce((t, c) => t += c.selling_price * c.qty, 0),
+            length: all_products.length
+        }
+    })
+
+});
+
+app.post('/inventory/add', ensureAuth, async(req,res) => {
+    const product = req.body;
+
+    const productExist = await Inventory.findOne({ business: req.user.business._id, name: product.name });
+
+    if(productExist){
+        return res.json({
+            status: 'error',
+            msg: 'Produt Aleardy Exists'
+        });
+    }
+
+    await Inventory.create({
+        id: `PROD${gen_id(['genLowercase','genNumber'], 7)}`,
+        ...product,
+        business: req.user.business._id,
+        user: req.user
+    });
+    
+    res.json({
+        status: 'success',
+        msg: '',
+        user: req.user
+    })
 });
 
 app.get('/exit', ensureAuth, async(req, res)=>{

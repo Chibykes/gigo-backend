@@ -32,8 +32,8 @@ app.use(session({
   cookie: {
       domain: "gigo-backend-vt.herokuapp.com",
       secure: true,
-      expires: 2592000000,
       sameSite: 'none',
+      expires: 2592000000,
       maxAge: 2592000000
   },
   store: MongoStore.create({ 
