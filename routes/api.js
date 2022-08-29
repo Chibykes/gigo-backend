@@ -104,7 +104,7 @@ app.get('/trx', ensureAuth, async(req, res)=>{
 
     const limit = parseInt(req.query.limit) || 10;
     const date = parseInt(req.query.date) || 0;
-    const query = req.query.query && JSON.parse(req.query.query);
+    const query = JSON.parse(req.query.query || `{}`);
 
     const data = await Transactions.find({
         business: req.user.business._id,
@@ -294,6 +294,7 @@ app.get('/reports', ensureAuth, async(req, res)=>{
     const debts = await Transactions.find({ 
         business,
         type: 'sales',
+        balance: { $ne: 0 },
         createdAt:  { $gt: time }
     }, 'customer_name balance').sort({balance: 'desc'});
     
