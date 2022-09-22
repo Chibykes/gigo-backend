@@ -4,6 +4,7 @@ const Admins = require('../models/Admins');
 const Transactions = require('../models/Transactions');
 const Business = require('../models/Business');
 const Inventory = require('../models/Inventory');
+const History = require('../models/History');
 const Pins = require('../models/Pins');
 const gen_id = require('../utils/genIDs');
 const bcrypt = require('bcryptjs');
@@ -50,7 +51,17 @@ app.post('/new-sales', ensureAuth, async(req, res) => {
 
         req.body.sales.forEach(async({product, qty}) => {
             await Inventory.findOneAndUpdate({ name: product }, {$inc: { qty: -parseInt(qty) }})
-        })
+        });
+
+        History.create({
+            section: 'sales',
+            action: 'create',
+            oldData: {},
+            newData: trx,
+            transaction: trx._id,
+            business: req.user.business._id,
+            initiator: req.user._id
+        });
 
         res.json({
             status: 'success',
@@ -79,6 +90,16 @@ app.post('/new-spendings', ensureAuth, async(req, res) => {
             id: `GO${gen_id(['genLowercase','genNumber'], 7)}`,
             type: 'debit',
             reference: gen_id(['genNumber'], 15),
+            initiator: req.user._id
+        });
+
+        History.create({
+            section: 'debit',
+            action: 'create',
+            oldData: {},
+            newData: trx,
+            transaction: trx._id,
+            business: req.user.business._id,
             initiator: req.user._id
         });
 
@@ -161,7 +182,7 @@ app.get('/staffs', ensureAuth, async(req, res)=>{
     });
 });
 
-app.post('/new-staff', ensureAuth, (req, res) => {
+app.post('/new-staff', ensureAuth, async(req, res) => {
 
     const business = req.user.business._id;
 
@@ -169,12 +190,22 @@ app.post('/new-staff', ensureAuth, (req, res) => {
         password
     } = req.body;
 
-    Admins.create({
+    const staff = await Admins.create({
         id: 'GO' + gen_id(['genUppercase','genNumber'], 4),
         business,
         ...req.body,
         role: 'staff',
         password: bcrypt.hashSync(password, bcrypt.genSaltSync(10)),
+    });
+
+    History.create({
+        section: 'staff',
+        action: 'create',
+        oldData: {},
+        newData: staff,
+        staff: staff._id,
+        business: req.user.business._id,
+        initiator: req.user._id
     });
 
     res.json({
@@ -191,7 +222,18 @@ app.get('/delete-trx', ensureAuth, async(req, res) => {
         const business = req.user.business._id;
         const query = JSON.parse(req.query.query);
     
+        const trx = await Transactions.findOne({...query, business}).exec();
         await Transactions.findOneAndDelete({...query, business}).exec();
+
+        History.create({
+            section: trx.type,
+            action: 'delete',
+            oldData: trx,
+            newData: {},
+            transaction: trx._id,
+            business: req.user.business._id,
+            initiator: req.user._id
+        });
     
         res.json({
             status: 'success'
@@ -211,7 +253,17 @@ app.post('/edit-transaction', ensureAuth, async(req, res) => {
         const business = req.user.business._id;
         const query = JSON.parse(req.query.query);
     
-        await Transactions.findOneAndUpdate({...query, business}, {...req.body}).exec();
+        const trx = await Transactions.findOneAndUpdate({...query, business}, {...req.body}).exec();
+
+        History.create({
+            section: trx.type,
+            action: 'edit',
+            oldData: trx,
+            newData: req.body,
+            transaction: trx._id,
+            business: req.user.business._id,
+            initiator: req.user._id
+        });
     
         res.json({
             status: 'success',
@@ -232,10 +284,20 @@ app.post('/resolve-debt', ensureAuth, async(req, res)=>{
         const business = req.user.business._id;
         const { id, amount, balance } = req.body;
         
-        await Transactions.findOneAndUpdate(
+        const trx = await Transactions.findOneAndUpdate(
             {id, business},
             { amount, balance, debt_resolver: req.user._id }
         );
+
+        History.create({
+            section: 'sales',
+            action: 'resolve-debt',
+            oldData: trx,
+            newData: req.body,
+            transaction: trx._id,
+            business: req.user.business._id,
+            initiator: req.user._id
+        });
     
         res.json({
             status: 'success',
@@ -346,10 +408,10 @@ app.get('/inventory', ensureAuth, async(req, res) => {
     const {limit} = JSON.parse(req?.query?.query || `{}`);
 
     const all_products = await Inventory.find({ 
-        business: req.user.business._id 
+        business: req.user.business._id
     }).sort({createdAt: 'desc'});
 
-
+    
     res.json({
         status: 'success',
         msg: '',
@@ -376,11 +438,21 @@ app.post('/inventory/add', ensureAuth, async(req,res) => {
         });
     }
 
-    await Inventory.create({
+    const newProduct = await Inventory.create({
         id: `PROD${gen_id(['genLowercase','genNumber'], 7)}`,
         ...product,
         business: req.user.business._id,
         user: req.user
+    });
+
+    History.create({
+        section: 'inventory',
+        action: 'create',
+        oldData: {},
+        newData: newProduct,
+        product: newProduct._id,
+        business: req.user.business._id,
+        initiator: req.user._id
     });
     
     res.json({
@@ -388,6 +460,57 @@ app.post('/inventory/add', ensureAuth, async(req,res) => {
         msg: '',
         user: req.user
     })
+});
+
+app.get('/inventory/:id', ensureAuth, async(req, res) => {
+
+    const product = await Inventory.findOne({ 
+        business: req.user.business._id,
+        id: req.params.id
+    });
+
+
+    res.json({
+        status: 'success',
+        msg: '',
+        data: product,
+        user: req.user !== null
+    })
+
+});
+
+app.post('/inventory/:id', ensureAuth, async(req, res) => {
+
+    const { name, qty, unit, cost_price, selling_price, action } = req.body;
+
+    const oldData = await Inventory.findOne({ 
+        business: req.user.business._id,
+        id: req.params.id
+    });
+
+    History.create({
+        section: 'inventory',
+        action,
+        oldData,
+        newData: { name, qty, unit, cost_price, selling_price, action },
+        product: oldData._id,
+        business: req.user.business._id,
+        initiator: req.user._id
+    });
+
+    const product = await Inventory.findOneAndUpdate({ 
+        business: req.user.business._id,
+        id: req.params.id
+    }, { name, qty, unit, cost_price, selling_price }, {new: 1} );
+
+
+    res.json({
+        status: 'success',
+        msg: '',
+        data: product,
+        user: req.user !== null
+    })
+
 });
 
 app.get('/exit', ensureAuth, async(req, res)=>{
