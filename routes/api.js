@@ -10,6 +10,9 @@ const gen_id = require('../utils/genIDs');
 const bcrypt = require('bcryptjs');
 const { ensureAuth }  = require('../config/auth')
 
+const TransactionsRoute = require('./trx');
+const InventoryRoute = require('./inventory');
+
 
 app.get('/auth', (req,res) => { 
     res.json({
@@ -37,122 +40,11 @@ app.post('/auth', (req, res, next) => {
 
 });
 
-app.post('/new-sales', ensureAuth, async(req, res) => {
 
-    try{
-        const trx = await Transactions.create({
-            business: req.user.business._id,
-            ...req.body,
-            id: `GO${gen_id(['genLowercase','genNumber'], 7)}`,
-            type: 'sales',
-            reference: gen_id(['genNumber'], 15),
-            initiator: req.user._id
-        });
-
-        req.body.sales.forEach(async({product, qty}) => {
-            await Inventory.findOneAndUpdate({ name: product }, {$inc: { qty: -parseInt(qty) }})
-        });
-
-        History.create({
-            section: 'sales',
-            action: 'create',
-            oldData: {},
-            newData: trx,
-            transaction: trx._id,
-            business: req.user.business._id,
-            initiator: req.user._id
-        });
-
-        res.json({
-            status: 'success',
-            msg: 'Transaction has been added',
-            data: {id: trx.id},
-            user: req.user
-        });
-        
-    } catch(e) {
-        res.json({
-            status: 'error',
-            msg: 'An error occured',
-            data: null,
-            user: req.user
-        })
-    }
-
-});
-
-app.post('/new-spendings', ensureAuth, async(req, res) => {
-
-    try{
-        const trx = await Transactions.create({
-            business: req.user.business._id,
-            ...req.body,
-            id: `GO${gen_id(['genLowercase','genNumber'], 7)}`,
-            type: 'debit',
-            reference: gen_id(['genNumber'], 15),
-            initiator: req.user._id
-        });
-
-        History.create({
-            section: 'debit',
-            action: 'create',
-            oldData: {},
-            newData: trx,
-            transaction: trx._id,
-            business: req.user.business._id,
-            initiator: req.user._id
-        });
-
-        res.json({
-            status: 'success',
-            msg: 'Transaction has been added',
-            data: {id: trx.id},
-            user: req.user
-        });
-        
-    } catch(e) {
-        res.json({
-            status: 'error',
-            msg: 'An error occured',
-            data: null,
-            user: req.user
-        })
-    }
-
-});
-
-app.get('/trx', ensureAuth, async(req, res)=>{
-
-    const limit = parseInt(req.query.limit) || 10;
-    const date = parseInt(req.query.date) || 0;
-    const query = JSON.parse(req.query.query || `{}`);
-
-    const data = await Transactions.find({
-        business: req.user.business._id,
-        ...query,
-    })
-    .populate('business')
-    .populate('initiator')
-    .populate('debt_resolver')
-    .sort({updatedAt: 'desc'})
-    .limit(limit);
-
-    const specificTrx = await Transactions.find({ 
-        business: req.user.business._id,
-        createdAt:  { 
-            $gt: new Date(new Date(new Date().toLocaleDateString()).getTime() - (1000 * 60 * 60 * 24 * date )).getTime() 
-        }
-    });
+app.use('/trx', TransactionsRoute);
+app.use('/inventory', InventoryRoute);
 
 
-    res.json({
-        status: 'success',
-        msg: 'Transactions found',
-        data,
-        specificTrx,
-        user: req.user
-    });
-});
 
 app.get('/staffs', ensureAuth, async(req, res)=>{
 
@@ -216,105 +108,6 @@ app.post('/new-staff', ensureAuth, async(req, res) => {
 
 })
 
-app.get('/delete-trx', ensureAuth, async(req, res) => {
-
-    try{
-        const business = req.user.business._id;
-        const query = JSON.parse(req.query.query);
-    
-        const trx = await Transactions.findOne({...query, business}).exec();
-        await Transactions.findOneAndDelete({...query, business}).exec();
-
-        History.create({
-            section: trx.type,
-            action: 'delete',
-            oldData: trx,
-            newData: {},
-            transaction: trx._id,
-            business: req.user.business._id,
-            initiator: req.user._id
-        });
-    
-        res.json({
-            status: 'success'
-        })
-    } catch(e){
-        res.json({
-            status: 'error'
-        })
-
-    }
-
-});
-
-app.post('/edit-transaction', ensureAuth, async(req, res) => {
-    
-    try{
-        const business = req.user.business._id;
-        const query = JSON.parse(req.query.query);
-    
-        const trx = await Transactions.findOneAndUpdate({...query, business}, {...req.body}).exec();
-
-        History.create({
-            section: trx.type,
-            action: 'edit',
-            oldData: trx,
-            newData: req.body,
-            transaction: trx._id,
-            business: req.user.business._id,
-            initiator: req.user._id
-        });
-    
-        res.json({
-            status: 'success',
-            user: req.user
-        })
-    } catch(e){
-        res.json({
-            status: 'error',
-            user: req.user
-        })
-
-    }
-
-});
-
-app.post('/resolve-debt', ensureAuth, async(req, res)=>{
-    try {
-        const business = req.user.business._id;
-        const { id, amount, balance } = req.body;
-        
-        const trx = await Transactions.findOneAndUpdate(
-            {id, business},
-            { amount, balance, debt_resolver: req.user._id }
-        );
-
-        History.create({
-            section: 'sales',
-            action: 'resolve-debt',
-            oldData: trx,
-            newData: req.body,
-            transaction: trx._id,
-            business: req.user.business._id,
-            initiator: req.user._id
-        });
-    
-        res.json({
-            status: 'success',
-            msg: '',
-            user: req.user
-        });
-
-    } catch (e){
-        res.json({
-            status: 'error',
-            msg: 'Could not resolve debt',
-            user: req.user
-        });
-
-    }
-});
-
 app.post('/profile', ensureAuth, async(req, res) => {
 
     const business = req.user.business._id;
@@ -343,27 +136,60 @@ app.post('/profile', ensureAuth, async(req, res) => {
 
 app.get('/reports', ensureAuth, async(req, res)=>{
 
-    const date = (parseInt(req.query.date)-1) || 0;
+    const { 
+        date,
+        search,
+        type,
+        status
+    } = req.query;
+     
     const business = req.user.business._id;
-    const time = new Date(new Date(new Date().toLocaleDateString()).getTime() - (1000 * 60 * 60 * 24 * date )).getTime() ;
+    const query = { };
+    const sort = { };
+
+    if(search){ 
+        query.$or = [
+            {id: {$regex: search.trim().toUpperCase().replace(/\\/ig, '')}},
+            {customer_name: {$regex: search.trim().toLowerCase().replace(/\\/ig, '')}},
+            {customer_phone: {$regex: search.trim().toLowerCase().replace(/\\/ig, '')}},
+        ]
+    }
+
+    if(date){
+        const { from, to } = JSON.parse(date);
+        query.createdAt = { 
+            $gt: new Date(from).getTime(),
+            $lt: new Date(to).getTime()
+        }
+
+        sort.createdAt = 'desc';
+    }
+
+    if(type) query.type = type;
+
+    if(status) {
+        if(status == "fully paid") query.balance = 0;
+        if(status == "owing") query.balance = { $gt: 0 };
+    }
+
 
     const sales = await Transactions.find({
+        ...query,
         business,
         type: 'sales',
-        createdAt:  { $gt: time }
     }, 'customer_name amount').sort({amount: 'desc'});
     
     const debts = await Transactions.find({ 
+        ...query,
+        balance: { $gt: 0 },
         business,
         type: 'sales',
-        balance: { $ne: 0 },
-        createdAt:  { $gt: time }
     }, 'customer_name balance').sort({balance: 'desc'});
     
     const expenses = await Transactions.find({ 
+        ...query,
         business,
         type: 'debit',
-        createdAt:  { $gt: time }
     }, 'amount').sort({createdAt: 'desc'});
 
 
@@ -404,115 +230,6 @@ app.post('/subscribe', ensureAuth, async(req, res) => {
 
 });
 
-app.get('/inventory', ensureAuth, async(req, res) => {
-    const {limit} = JSON.parse(req?.query?.query || `{}`);
-
-    const all_products = await Inventory.find({ 
-        business: req.user.business._id
-    }).sort({createdAt: 'desc'});
-
-    
-    res.json({
-        status: 'success',
-        msg: '',
-        user: req.user,
-        data: limit ? all_products.slice(0, parseInt(limit)) : all_products,
-        calc: {
-            purchase: all_products.reduce((t, c) => t += c.cost_price * c.qty, 0),
-            selling: all_products.reduce((t, c) => t += c.selling_price * c.qty, 0),
-            length: all_products.length
-        }
-    })
-
-});
-
-app.post('/inventory/add', ensureAuth, async(req,res) => {
-    const product = req.body;
-
-    const productExist = await Inventory.findOne({ business: req.user.business._id, name: product.name });
-
-    if(productExist){
-        return res.json({
-            status: 'error',
-            msg: 'Produt Aleardy Exists'
-        });
-    }
-
-    const newProduct = await Inventory.create({
-        id: `PROD${gen_id(['genLowercase','genNumber'], 7)}`,
-        ...product,
-        business: req.user.business._id,
-        user: req.user
-    });
-
-    History.create({
-        section: 'inventory',
-        action: 'create',
-        oldData: {},
-        newData: newProduct,
-        product: newProduct._id,
-        business: req.user.business._id,
-        initiator: req.user._id
-    });
-    
-    res.json({
-        status: 'success',
-        msg: '',
-        user: req.user
-    })
-});
-
-app.get('/inventory/:id', ensureAuth, async(req, res) => {
-
-    const product = await Inventory.findOne({ 
-        business: req.user.business._id,
-        id: req.params.id
-    });
-
-
-    res.json({
-        status: 'success',
-        msg: '',
-        data: product,
-        user: req.user !== null
-    })
-
-});
-
-app.post('/inventory/:id', ensureAuth, async(req, res) => {
-
-    const { name, qty, unit, cost_price, selling_price, action } = req.body;
-
-    const oldData = await Inventory.findOne({ 
-        business: req.user.business._id,
-        id: req.params.id
-    });
-
-    History.create({
-        section: 'inventory',
-        action,
-        oldData,
-        newData: { name, qty, unit, cost_price, selling_price, action },
-        product: oldData._id,
-        business: req.user.business._id,
-        initiator: req.user._id
-    });
-
-    const product = await Inventory.findOneAndUpdate({ 
-        business: req.user.business._id,
-        id: req.params.id
-    }, { name, qty, unit, cost_price, selling_price }, {new: 1} );
-
-
-    res.json({
-        status: 'success',
-        msg: '',
-        data: product,
-        user: req.user !== null
-    })
-
-});
-
 app.get('/exit', ensureAuth, async(req, res)=>{
     req.logOut();
     res.json({
@@ -521,5 +238,35 @@ app.get('/exit', ensureAuth, async(req, res)=>{
         data: null
     })
 });
+
+app.get('/fake', async(req, res) => {
+    for(let i=0; i<20; i++){
+        Transactions.create({
+            "id": `GO${gen_id(['genLowercase','genNumber'], 7)}`,
+            "type": "sales",
+            "customer_name": `${gen_id(['genLowercase'], 7)}`,
+            "customer_phone": "08168202349",
+            "sales": [
+                {
+                    "product": "Fake Item",
+                    "qty": "33",
+                    "unit": "packs",
+                    "price": "333",
+                    "description": ""
+                }
+            ],
+            "amount": 10039,
+            "balance": 50,
+            "discount": 900,
+            "description": "",
+            "reference": "982902460837262",
+            "payment_method": "cash",
+            "business": "62f256ca659247c831addf14",
+            "initiator": "62b8231085ebe4eaeb9a8ceb",
+        })
+    }
+
+    res.json({status: 200, msg: 'Fake Transactions Added'});
+})
 
 module.exports = app;

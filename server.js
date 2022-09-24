@@ -57,5 +57,4 @@ app.get('/', (req, res) => res.json({
 
 app.use('/api', require('./routes/api'));
 
-
 app.listen(port, ()=>{ console.log(`Server running on port: ${port}`) });
