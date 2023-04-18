@@ -12,7 +12,8 @@ app.get('/', ensureAuth, async(req, res) => {
     const { 
         search,
         limit,
-        list
+        list,
+        page
      } = req.query;
 
     const query = { };
@@ -29,6 +30,7 @@ app.get('/', ensureAuth, async(req, res) => {
         ...query
     }, list && '-business -initiator')
     .sort({ createdAt: 'desc' })
+    .skip(((page || 1)-1) * (limit||20))
     .limit(limit || 20);
 
 
