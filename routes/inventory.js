@@ -138,6 +138,28 @@ app.put('/', ensureAuth, async(req, res) => {
 
 });
 
+app.get('/all', ensureAuth, async(req, res) => {
+
+    const { 
+        search
+     } = req.query;
+
+    const query = { };
+    const product = await Inventory.find({ 
+        business: req.user.business._id,
+        ...query
+    }, list && '-business -initiator')
+    .sort({ createdAt: 'desc' });
+
+    res.json({
+        status: 'success',
+        msg: '',
+        data: product,
+        user: req.user !== null
+    })
+
+});
+
 app.get('/report', ensureAuth, async(req, res) => {
 
     const all_products = await Inventory.find({ 
