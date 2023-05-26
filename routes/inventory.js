@@ -141,7 +141,8 @@ app.put('/', ensureAuth, async(req, res) => {
 app.get('/all', ensureAuth, async(req, res) => {
 
     const { 
-        search
+        search,
+        list
      } = req.query;
 
     const query = { };
