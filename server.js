@@ -30,7 +30,7 @@ app.use(session({
   resave: false,
   saveUninitialized: true,
   cookie: {
-      domain: "gigo-backend-vt.herokuapp.com",
+      domain: "gigo-backend.chibykes.dev",
       secure: true,
       sameSite: 'none',
       expires: 2592000000,
